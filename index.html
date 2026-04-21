@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carte Normandie</title>
 
-    <!-- Leaflet CSS -->
+    <!-- Inclusion de leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <link rel="stylesheet" href="css/style.css" />
@@ -14,6 +14,14 @@
 <body>
 
     <h2>Carte de la Normandie</h2>
+
+    <select id="indicateur">
+        <option value="">-- Choisissez un indicateur --</option>
+        <option value="population_2023.json">Population 2023</option>
+        <option value="densite_2022.json">Densité 2022</option>
+        <option value="revenu_median.json">Revenu médian</option>
+    </select>
+
     <div id="map"></div>
 
     <!-- Leaflet JS -->
