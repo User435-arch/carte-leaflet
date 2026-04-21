@@ -16,11 +16,21 @@
     <h2>Carte de la Normandie</h2>
 
     <select id="indicateur">
-        <option value="">-- Choisissez un indicateur --</option>
-        <option value="banques_2024.json">Nb de banques en 2024</option>
-        <option value="bassins_natation_2024.json">Nb de bassins de natation en 2024</option>
-        <option value="boulangeries_2024.json">Nb de boulangeries en 2024</option>
     </select>
+
+    <script>
+        fetch("json/indicateurs.json")
+        .then(r => r.json())
+        .then(indicateurs => {
+            const select = document.getElementById("indicateur");
+            indicateurs.forEach(fichier => {
+                const option = document.createElement("option");
+                option.value = fichier;
+                option.textContent = fichier.replace(".json", "");
+                select.appendChild(option);
+            });
+        });
+    </script>
 
     <div id="map"></div>
 
