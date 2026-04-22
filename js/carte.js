@@ -60,7 +60,7 @@ function onEachFeature(feature, layer) {
             // Optionnel : highlight
             e.target.setStyle({
                 weight: 2,
-                color: "#000",
+                color: "#0f0",
                 fillOpacity: 0.8
             });
         },
