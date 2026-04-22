@@ -1,4 +1,17 @@
+h2 {
+  text-align: center;
+}
+
+body {
+    font-family:'Segoe UI',Arial,sans-serif;
+    background:#FADFC0;
+    color:#1a1a1a;
+    min-height:100vh;
+    padding:1.5rem 1rem
+}
+
 #map {
+    top: 20px;
     width: 100%;
     height: 600px;
 }
