@@ -28,3 +28,20 @@ body {
     margin: 0 0 5px;
     color: #777;
 }
+
+.legend {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.8;
+}
