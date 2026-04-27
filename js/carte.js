@@ -102,7 +102,7 @@ legend.update = function (classes) {
                     display: inline-block;
                     border-radius: 2px;
                 "></i>
-                ${c.min.toLocaleString()} - ${c.max.toLocaleString()}
+                ${Math.round(c.min).toLocaleString()} - ${Math.round(c.max).toLocaleString()}
             </div>
         `;
     });
@@ -197,7 +197,8 @@ function updateMap() {
         return;
     }
 
-    classesGlobales = computeQuantileClasses(valeurs, 5);
+    //classesGlobales = computeQuantileClasses(valeurs, 5);
+    classesGlobales = computePercentileClasses(valeurs);
 
     legend.update(classesGlobales);
     geojsonLayer.setStyle(style);
@@ -217,7 +218,7 @@ function getColor(value, classes) {
     return palette[palette.length - 1];
 }
 
-function computeQuantileClasses(values, n = 5) {
+/*function computeQuantileClasses(values, n = 5) {
     const validValues = values
         .filter(v => Number.isFinite(v))
         .sort((a, b) => a - b);
@@ -236,7 +237,82 @@ function computeQuantileClasses(values, n = 5) {
     }
     
     return classes;
+}*/
+function computePercentileClasses(values, percentiles = [0, 20, 40, 60, 80, 100]) {
+    // 1. Valeurs valides triées
+    let validValues = values
+        .filter(v => Number.isFinite(v))
+        .sort((a, b) => a - b);
+    
+    if (validValues.length === 0) return [];
+    
+    // 2. Suppression des doublons consécutifs
+    validValues = validValues.filter((v, i) => i === 0 || v !== validValues[i-1]);
+    
+    if (validValues.length < 2) {
+        return [{ min: validValues[0], max: validValues[0] }];
+    }
+    
+    const classes = [];
+    const n = percentiles.length;
+    
+    for (let i = 0; i < n - 1; i++) {
+        const p1 = percentiles[i] / 100;
+        const p2 = percentiles[i + 1] / 100;
+        
+        const idx1 = Math.floor(p1 * validValues.length);
+        const idx2 = Math.floor(p2 * validValues.length) - 1;
+        
+        let minClass = validValues[idx1];
+        let maxClass = validValues[Math.min(idx2, validValues.length - 1)];
+        
+        // 3. SAUT des doublons dans la classe
+        if (minClass === maxClass) {
+            // Cherche prochaine valeur différente AVANT
+            let j = idx2 + 1;
+            while (j < validValues.length && validValues[j] === minClass) j++;
+            if (j < validValues.length) {
+                maxClass = validValues[j];
+            }
+            
+            // Cherche précédente valeur différente APRÈS
+            let k = idx1 - 1;
+            while (k >= 0 && validValues[k] === minClass) k--;
+            if (k >= 0) {
+                minClass = validValues[k];
+            }
+        }
+        
+        // 4. Classe valide UNIQUEMENT si min < max
+        if (minClass < maxClass) {
+            classes.push({ min: minClass, max: maxClass });
+        }
+    }
+    
+    // 5. Dernière classe = max réel
+    if (classes.length > 0) {
+        classes[classes.length - 1].max = validValues[validValues.length - 1];
+    }
+    
+    // 6. SUPPRESSION DES DOUBLONS FINAUX
+    const classesUniques = [];
+    classes.forEach(c => {
+        const last = classesUniques[classesUniques.length - 1];
+        if (!last || last.max !== c.max || last.min !== c.min) {
+            classesUniques.push(c);
+        }
+    });
+    
+    console.table(classesUniques.map((c,i) => ({
+        classe: i+1,
+        min: c.min,
+        max: c.max,
+        etendue: c.max - c.min
+    })));
+    
+    return classesUniques;
 }
+
 
 // Pour le chargement initial
 function resetMap() {

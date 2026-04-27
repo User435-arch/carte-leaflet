@@ -11,8 +11,6 @@ reader.onload = (event) => {
 
     const csvText = event.target.result;
 
-    const parsed = parseCSV(csvText);
-
     const { headers, rows } = parseCSV(csvText);
     const { indicateurs, dataByIndicator } = buildIndicators(headers, rows);
 
@@ -51,6 +49,75 @@ function buildIndicators(headers, rows) {
     return { indicateurs, dataByIndicator };
 }
 
+function formatLibelleUniversel(csvLibelle) {
+    if (!csvLibelle || typeof csvLibelle !== 'string') return "Indicateur";
+    
+    let libelle = csvLibelle.trim();
+    
+    // 1. Nettoyage : underscores → espaces multiples
+    libelle = libelle.replace(/_+/g, ' ').trim();
+    
+    // 2. Détection et remplacement des abréviations
+    const abrevs = {
+        // Démographie
+        'pop': 'Population',
+        'hab': 'Habitant',
+        'dem': 'Démographie',
+        
+        // Économie
+        'tx': 'Taux',
+        'rev': 'Revenu',
+        'sal': 'Salaire',
+        'pib': 'PIB',
+        'chom': 'Chômage',
+        
+        // Territoire
+        'dens': 'Densité',
+        'surf': 'Surface',
+        'km2': 'km²',
+        
+        // Stats
+        'moy': 'Moyen',
+        'med': 'Médian',
+        'min': 'Minimum',
+        'max': 'Maximum',
+        'nb': 'Nombre',
+        'tot': 'Total',
+        'evol': 'Évolution',
+        'var': 'Variation',
+        
+        // Temps
+        'an': 'Année',
+        'mois': 'Mois'
+    };
+    
+    // Remplacement des abréviations
+    Object.keys(abrevs).forEach(abrev => {
+        const regex = new RegExp(`\\b${abrev}\\b`, 'gi');
+        libelle = libelle.replace(regex, abrevs[abrev]);
+    });
+    
+    libelle = libelle
+        .toLowerCase()
+        .split(/\s+/)
+        .map(word => {
+            // Première lettre majuscule (sauf articles/prépositions)
+            const petitesMots = ['de', 'du', 'du', 'des', 'le', 'la', 'les', 'et', 'ou', 'en', 'sur'];
+            if (petitesMots.includes(word.toLowerCase())) return word.toLowerCase();
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
+        .join(' ');
+    
+    // 4. Post-traitement
+    libelle = libelle
+        .replace(/Km2/g, 'km²')
+        .replace(/([0-9]{4})\s+([0-9]{4})/g, '$1-$2')  // 2016 2022 → 2016-2022
+        .replace(/\s+/g, ' ')  // Espaces multiples
+        .trim();
+    
+    return libelle || "Indicateur";
+}
+
 function updateSelect(indicateurs) {
     const select = document.getElementById("indicateur");
     select.innerHTML = "<option value=''>-- Choisissez un indicateur --</option>";
@@ -58,7 +125,7 @@ function updateSelect(indicateurs) {
     indicateurs.forEach(ind => {
         const option = document.createElement("option");
         option.value = ind;
-        option.textContent = ind; // tu pourras mettre formatLabel(ind)
+        option.textContent = formatLibelleUniversel(ind);
         select.appendChild(option);
     });
 }
