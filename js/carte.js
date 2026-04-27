@@ -10,7 +10,7 @@ const palette = [
 
 
 // Initialisation de la carte
-var map = L.map('map').setView([49.2, 0.5], 8); // Centre approximatif de la Normandie
+var map = L.map('map').setView([49.2, 0.5], 8); // Centre de la Normandie
 
 // Design de la carte
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -34,11 +34,11 @@ fetch("json/normandie.json")
     }).addTo(map);
 });
 
-//Fenêtre d'affichage des données
+//Infobox pour l'affichage des données
 var info = L.control();
 
   info.onAdd = function (map) {
-      this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+      this._div = L.DomUtil.create('div', 'info');
       this.update();
       return this._div;
   };
@@ -54,24 +54,12 @@ var info = L.control();
 
 let dataIndicateurCourant = {};
 
-/*document.getElementById('indicateur').addEventListener('change', function() {
-    const fichier = this.value;
-    chargerJson(fichier);
-    
-});*/
-
-/*document.getElementById("indicateur").addEventListener("change", function() {
-    const ind = this.value;
-
-    dataIndicateurCourant = dataByIndicator[ind];
-    updateMap();
-});*/
 
 document.getElementById("indicateur").addEventListener("change", function() {
     const ind = this.value;
     
     if (ind === "" || !dataByIndicator[ind]) {
-        // Reset
+        // Reset des données
         dataIndicateurCourant = {};
         updateMap();
         return;
@@ -91,29 +79,10 @@ legend.onAdd = function (map) {
     return this._div;
 };
 
-/*legend.update = function (classes) {
-    this._div.innerHTML = "<strong>Légende</strong><br>";
-
-    if(classes !== undefined)
-    {
-        var lstIndicateurs = document.getElementById("indicateur");
-        var nomIndicateur = lstIndicateurs.options[lstIndicateurs.selectedIndex].text;
-
-        this._div.innerHTML = `<strong>${nomIndicateur}</strong><br>`;
-
-        classes.forEach((c, i) => {
-            this._div.innerHTML += `
-                <i style="background:${palette[i]}"></i>
-                ${c.min.toFixed(0)} - ${c.max.toFixed(0)}<br>
-            `;
-        });
-    }
-};*/
-
 legend.update = function (classes) {
-    // CORRECTION : Remplacez "if(classes !== )" par :
+
     if (!classes || classes.length === 0) {
-        this._div.innerHTML = "<strong>Légende</strong><br><i>Aucun indicateur sélectionné</i>";
+        this._div.innerHTML = "<strong>Légende</strong><br>";
         return;
     }
     
@@ -122,7 +91,6 @@ legend.update = function (classes) {
 
     this._div.innerHTML = `<strong>${nomIndicateur}</strong><br>`;
 
-    // Amélioration du style des cases couleur
     classes.forEach((c, i) => {
         this._div.innerHTML += `
             <div style="display: flex; align-items: center; margin: 3px 0;">
@@ -139,7 +107,7 @@ legend.update = function (classes) {
         `;
     });
     
-    // Bonus : stats min/max
+    // Valuers min et max correspondant à l'indicateur
     const minVal = Math.min(...classes.map(c => c.min));
     const maxVal = Math.max(...classes.map(c => c.max));
     this._div.innerHTML += `
@@ -155,15 +123,6 @@ legend.update = function (classes) {
 legend.addTo(map);
 
 function style(feature) {
-
-    /*if (!indicateurActif) {
-        return {
-            weight: 1,
-            color: "#555",
-            fillOpacity: 0.7,
-            fillColor: "#3388ff" // couleur par défaut
-        };
-    }*/
 
     const code = feature.properties.code;
     const brut = dataIndicateurCourant[code];
@@ -207,32 +166,9 @@ function onEachFeature(feature, layer) {
             if (indicateurActif) {
                 e.target.setStyle(style(e.target.feature));
             }
-            info.update(); // revient au placeholder
+            info.update();
         }
     });
-}
-
-
-function chargerJson(fichier)
-{
-  
-    fetch("json/" + fichier)
-    .then(r => r.json())
-    .then(data => {
-        indicateurActif = true;
-        dataIndicateurCourant = data;
-
-        const valeurs = Object.values(data)
-            .map(v => Number(v))
-            .filter(v => Number.isFinite(v));
-
-
-        classesGlobales = computeLogQuantileClasses(valeurs, 5);
-
-        legend.update(classesGlobales);
-        geojsonLayer.setStyle(style);
-    });
-
 }
 
 function updateMap() {
@@ -261,107 +197,52 @@ function updateMap() {
         return;
     }
 
-    classesGlobales = computeLogQuantileClasses(valeurs, 5);
+    classesGlobales = computeQuantileClasses(valeurs, 5);
+
     legend.update(classesGlobales);
     geojsonLayer.setStyle(style);
 }
 
 function getColor(value, classes) {
-    if (value === null || isNaN(value)) return "#ccc";
-
+    if (value === null || value === undefined || !Number.isFinite(value)) {
+        return "#f5f5f5"; // Gris très clair
+    }
+    
     for (let i = 0; i < classes.length; i++) {
-        if (value >= classes[i].min && value < classes[i].max) {
+        if (value >= classes[i].min && value <= classes[i].max) {
             return palette[i];
         }
     }
-
+    
     return palette[palette.length - 1];
 }
 
-
-//Répartition équitable des communes
-function computeLogQuantileClasses(values, n = 5) {
-    // 1) Transformation logarithmique
-    const logValues = values.map(v => Math.log10(v + 1));
-
-    // 2) Tri
-    const sorted = [...logValues].sort((a, b) => a - b);
-
-    // 3) Quantiles sur les valeurs log
-    const classesLog = [];
+function computeQuantileClasses(values, n = 5) {
+    const validValues = values
+        .filter(v => Number.isFinite(v))
+        .sort((a, b) => a - b);
+    
+    if (validValues.length < 2) return [];
+    
+    const classes = [];
     for (let i = 0; i < n; i++) {
-        const qMin = sorted[Math.floor((i / n) * sorted.length)];
-        const qMax = sorted[Math.floor(((i + 1) / n) * sorted.length) - 1];
-
-        classesLog.push({ min: qMin, max: qMax });
+        const startIdx = Math.floor(i * validValues.length / n);
+        const endIdx = Math.floor((i + 1) * validValues.length / n) - 1;
+        
+        classes.push({
+            min: validValues[startIdx],
+            max: validValues[endIdx]
+        });
     }
-
-    // 4) Reconversion en valeurs réelles
-    let classes = classesLog.map(c => ({
-        min: Math.pow(10, c.min) - 1,
-        max: Math.pow(10, c.max) - 1
-    }));
-
-    // 5) Fusion des classes identiques
-    classes = mergeIdenticalClasses(classes);
-
+    
     return classes;
 }
 
-function cleanClasses(classes) {
-    const cleaned = [];
-
-    for (const c of classes) {
-        if (!Number.isFinite(c.min) || !Number.isFinite(c.max)) continue;
-        if (c.min === c.max) continue; // classe vide
-        cleaned.push(c);
-    }
-
-    // Fusionner les classes identiques
-    const merged = [];
-    for (const c of cleaned) {
-        if (
-            merged.length > 0 &&
-            merged[merged.length - 1].max === c.min
-        ) {
-            merged[merged.length - 1].max = c.max;
-        } else {
-            merged.push({ ...c });
-        }
-    }
-
-    return merged;
-}
-
-
-function mergeIdenticalClasses(classes) {
-    const merged = [];
-
-    classes.forEach(c => {
-        const last = merged[merged.length - 1];
-
-        if (!last || last.max !== c.max || last.min !== c.min) {
-            merged.push(c);
-        }
-    });
-
-    return merged;
-}
-
-// Pour le bouton reset ou au chargement initial
+// Pour le chargement initial
 function resetMap() {
     document.getElementById("indicateur").value = "";
     dataIndicateurCourant = {};
     indicateurActif = false;
     updateMap();
     map.setView([49.2, 0.5], 8);
-}
-
-function expandTinyClasses(classes) {
-    for (let i = 0; i < classes.length - 1; i++) {
-        if (classes[i].min === classes[i].max) {
-            classes[i].max = classes[i + 1].min;
-        }
-    }
-    return classes;
 }
