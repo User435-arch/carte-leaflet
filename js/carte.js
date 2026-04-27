@@ -54,11 +54,33 @@ var info = L.control();
 
 let dataIndicateurCourant = {};
 
-document.getElementById('indicateur').addEventListener('change', function() {
+/*document.getElementById('indicateur').addEventListener('change', function() {
     const fichier = this.value;
     chargerJson(fichier);
     
+});*/
+
+/*document.getElementById("indicateur").addEventListener("change", function() {
+    const ind = this.value;
+
+    dataIndicateurCourant = dataByIndicator[ind];
+    updateMap();
+});*/
+
+document.getElementById("indicateur").addEventListener("change", function() {
+    const ind = this.value;
+    
+    if (ind === "" || !dataByIndicator[ind]) {
+        // Reset
+        dataIndicateurCourant = {};
+        updateMap();
+        return;
+    }
+    
+    dataIndicateurCourant = dataByIndicator[ind];
+    updateMap();
 });
+
 
 //Légende adaptative en fonction de l'indicateur
 var legend = L.control({position: 'bottomright'});
@@ -69,21 +91,7 @@ legend.onAdd = function (map) {
     return this._div;
 };
 
-/*legend.update = function(min, max) {
-    if(min === undefined || max === undefined) {
-        this._div.innerHTML = "Légende";
-        return;
-    }
-
-    this._div.innerHTML = `
-        <strong>Légende</strong><br>
-        <i style="background:${getColor(min, min, max)}"></i> ${min}<br>
-        <i style="background:${getColor((min+max)/2, min, max)}"></i> ${(min+max)/2}<br>
-        <i style="background:${getColor(max, min, max)}"></i> ${max}
-    `;
-};*/
-
-legend.update = function (classes) {
+/*legend.update = function (classes) {
     this._div.innerHTML = "<strong>Légende</strong><br>";
 
     if(classes !== undefined)
@@ -100,34 +108,62 @@ legend.update = function (classes) {
             `;
         });
     }
+};*/
+
+legend.update = function (classes) {
+    // CORRECTION : Remplacez "if(classes !== )" par :
+    if (!classes || classes.length === 0) {
+        this._div.innerHTML = "<strong>Légende</strong><br><i>Aucun indicateur sélectionné</i>";
+        return;
+    }
+    
+    var lstIndicateurs = document.getElementById("indicateur");
+    var nomIndicateur = lstIndicateurs.options[lstIndicateurs.selectedIndex].text;
+
+    this._div.innerHTML = `<strong>${nomIndicateur}</strong><br>`;
+
+    // Amélioration du style des cases couleur
+    classes.forEach((c, i) => {
+        this._div.innerHTML += `
+            <div style="display: flex; align-items: center; margin: 3px 0;">
+                <i style="
+                    background: ${palette[i]};
+                    width: 18px; height: 14px; 
+                    margin-right: 8px; 
+                    border: 1px solid #ccc;
+                    display: inline-block;
+                    border-radius: 2px;
+                "></i>
+                ${c.min.toLocaleString()} - ${c.max.toLocaleString()}
+            </div>
+        `;
+    });
+    
+    // Bonus : stats min/max
+    const minVal = Math.min(...classes.map(c => c.min));
+    const maxVal = Math.max(...classes.map(c => c.max));
+    this._div.innerHTML += `
+        <hr style="margin: 8px -12px 8px -12px; border: none; border-top: 1px solid #eee;">
+        <small style="color: #666;">
+            Min: ${minVal.toLocaleString()}<br>
+            Max: ${maxVal.toLocaleString()}
+        </small>
+    `;
 };
 
 
 legend.addTo(map);
 
-/*function style(feature) {
-    const code = feature.properties.code;
-    const brut = dataIndicateurCourant[code];
-    const valeur = brut === undefined ? null : Number(brut);
-
-    return {
-        weight: 1,
-        color: "#555",
-        fillOpacity: 0.7,
-        fillColor: getColor(valeur, min, max)
-    };
-}*/
-
 function style(feature) {
 
-    if (!indicateurActif) {
+    /*if (!indicateurActif) {
         return {
             weight: 1,
             color: "#555",
             fillOpacity: 0.7,
             fillColor: "#3388ff" // couleur par défaut
         };
-    }
+    }*/
 
     const code = feature.properties.code;
     const brut = dataIndicateurCourant[code];
@@ -179,24 +215,7 @@ function onEachFeature(feature, layer) {
 
 function chargerJson(fichier)
 {
-
-  /*fetch("json/" + fichier)
-      .then(r => r.json())
-      .then(data => {
-          dataIndicateurCourant = data;
-
-        const valeurs = Object.values(data)
-            .map(v => Number(v))
-            .filter(v => !isNaN(v));
-
-        min = Math.min(...valeurs);
-        max = Math.max(...valeurs);
-
-        legend.update(min, max);
-        geojsonLayer.setStyle(style);
-        //appliquerIndicateur(data); // recolore la carte
-      });*/
-    
+  
     fetch("json/" + fichier)
     .then(r => r.json())
     .then(data => {
@@ -214,26 +233,38 @@ function chargerJson(fichier)
         geojsonLayer.setStyle(style);
     });
 
-
-
-
 }
 
-/*function getColor(value, min, max) {
-    if (value === null || value === undefined || isNaN(value)) {
-        return "#ccc"; // couleur pour "pas de données"
+function updateMap() {
+    if (!dataIndicateurCourant || Object.keys(dataIndicateurCourant).length === 0) {
+        // Pas d'indicateur actif
+        indicateurActif = false;
+        geojsonLayer.setStyle({
+            weight: 1,
+            color: "#555",
+            fillOpacity: 0.7,
+            fillColor: "#3388ff"
+        });
+        legend.update([]); // Cache la légende
+        return;
+    }
+    
+    // Indicateur actif
+    indicateurActif = true;
+    
+    const valeurs = Object.values(dataIndicateurCourant)
+        .map(v => Number(v))
+        .filter(v => Number.isFinite(v));
+
+    if (valeurs.length === 0) {
+        legend.update([]);
+        return;
     }
 
-    // Normalisation entre 0 et 1
-    const t = (value - min) / (max - min);
-
-    // Interpolation entre deux couleurs (bleu clair → bleu foncé)
-    const r = Math.round(200 - 150 * t);
-    const g = Math.round(220 - 150 * t);
-    const b = Math.round(255 - 150 * t);
-
-    return `rgb(${r}, ${g}, ${b})`;
-}*/
+    classesGlobales = computeLogQuantileClasses(valeurs, 5);
+    legend.update(classesGlobales);
+    geojsonLayer.setStyle(style);
+}
 
 function getColor(value, classes) {
     if (value === null || isNaN(value)) return "#ccc";
@@ -315,6 +346,15 @@ function mergeIdenticalClasses(classes) {
     });
 
     return merged;
+}
+
+// Pour le bouton reset ou au chargement initial
+function resetMap() {
+    document.getElementById("indicateur").value = "";
+    dataIndicateurCourant = {};
+    indicateurActif = false;
+    updateMap();
+    map.setView([49.2, 0.5], 8);
 }
 
 function expandTinyClasses(classes) {

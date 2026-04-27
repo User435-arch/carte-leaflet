@@ -19,6 +19,14 @@
     <select id="indicateur">
         <option value="">-- Choisissez un indicateur --</option>
     </select>
+    
+    <input type="file" id="fileSelect" accept=".csv"/>
+
+    <script>
+        // Variables globales accessibles à tous les scripts
+        let dataByIndicator = {};
+        let indicateurs = [];
+    </script>
 
     <script>
         fetch("json/indicateurs.json")
@@ -132,7 +140,7 @@
 
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
+    <script src="js/genererData.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@drustack/leaflet.resetview/dist/L.Control.ResetView.min.js"></script>
     <script src="js/carte.js"></script>
