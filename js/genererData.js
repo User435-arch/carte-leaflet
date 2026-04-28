@@ -40,12 +40,27 @@ function buildIndicators(headers, rows) {
 
     indicateurs.forEach(ind => {
         dataByIndicator[ind] = {};
-        rows.forEach(r => {
+        /*rows.forEach(r => {
             if(r[ind].includes("N/A"))
                 dataByIndicator[ind][r.code] = "Aucune donnée";
             else
                 dataByIndicator[ind][r.code] = r[ind];
+        });*/
+
+        rows.forEach(r => {
+            const raw = (r[ind] || "").toString().trim().toLowerCase();
+
+            if (
+                raw.includes("n/a") ||
+                raw.includes("division par") ||
+                raw.includes("résultat non disponible")
+            ) {
+                dataByIndicator[ind][r.code] = "Aucune donnée";
+            } else {
+                dataByIndicator[ind][r.code] = r[ind];
+            }
         });
+
     });
 
     return { indicateurs, dataByIndicator };

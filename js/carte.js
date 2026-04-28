@@ -25,6 +25,15 @@ L.control.resetView({
         zoom: 8,
     }).addTo(map);
 
+L.easyPrint({
+    title: 'Exporter la carte',
+    position: 'topleft',
+    sizeModes: ['A4Portrait', 'A4Landscape'],
+    exportOnly: true,
+    filename: 'carte_normandie'
+}).addTo(map);
+
+
 var geojsonLayer = null;
 fetch("json/normandie.json")
   .then(r => r.json())
@@ -106,6 +115,10 @@ legend.update = function (classes) {
             </div>
         `;
     });
+    this._div.innerHTML += `
+    <i style="background:#ff0000"></i> Aucune donnée<br>
+`;
+
     
     // Valuers min et max correspondant à l'indicateur
     const minVal = Math.min(...classes.map(c => c.min));
@@ -123,16 +136,34 @@ legend.update = function (classes) {
 legend.addTo(map);
 
 function style(feature) {
-
     const code = feature.properties.code;
     const brut = dataIndicateurCourant[code];
-    const valeur = brut === undefined ? null : Number(brut);
+
+    if (brut === "Aucune donnée" || brut === "inconnu" || brut === null) {
+        return {
+            fillColor: "#ff0000",
+            color: "#555",
+            weight: 1,
+            fillOpacity: 0.6
+        };
+    }
+
+    const val = Number(brut);
+
+    if (!Number.isFinite(val)) {
+        return {
+            fillColor: "#d9d9d9",
+            color: "#555",
+            weight: 1,
+            fillOpacity: 0.6
+        };
+    }
 
     return {
-        weight: 1,
+        fillColor: getColor(val, classesGlobales),
         color: "#555",
-        fillOpacity: 0.7,
-        fillColor: getColor(valeur, classesGlobales)
+        weight: 1,
+        fillOpacity: 0.7
     };
 }
 
@@ -149,7 +180,7 @@ function onEachFeature(feature, layer) {
             // Récupérer la valeur de l’indicateur courant
             const valeur = dataIndicateurCourant[code];
 
-            // Mise à jour du L.control()
+            // Mise à jour de l'infobox
             info.update({ nom, valeur });
 
             // la commune sur laquelle on place la souris devient verte
@@ -205,8 +236,8 @@ function updateMap() {
 }
 
 function getColor(value, classes) {
-    if (value === null || value === undefined || !Number.isFinite(value)) {
-        return "#f5f5f5"; // Gris très clair
+    if (value === "Aucune donnée" || value === null || value === undefined || !Number.isFinite(value)) {
+        return "#ff0000";
     }
     
     for (let i = 0; i < classes.length; i++) {
@@ -321,4 +352,13 @@ function resetMap() {
     indicateurActif = false;
     updateMap();
     map.setView([49.2, 0.5], 8);
+}
+
+function exportCarte() {
+    html2canvas(document.getElementById('map')).then(canvas => {
+        const lien = document.createElement('a');
+        lien.download = 'carte_normandie_' + Date.now() + '.png';
+        lien.href = canvas.toDataURL();
+        lien.click();
+    });
 }
