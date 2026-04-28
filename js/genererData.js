@@ -39,10 +39,12 @@ function buildIndicators(headers, rows) {
     dataByIndicator = {};
 
     indicateurs.forEach(ind => {
-        console.log(indicateurs);
         dataByIndicator[ind] = {};
         rows.forEach(r => {
-            dataByIndicator[ind][r.code] = r[ind];
+            if(r[ind].includes("N/A"))
+                dataByIndicator[ind][r.code] = "Aucune donnée";
+            else
+                dataByIndicator[ind][r.code] = r[ind];
         });
     });
 
