@@ -249,26 +249,6 @@ function getColor(value, classes) {
     return palette[palette.length - 1];
 }
 
-/*function computeQuantileClasses(values, n = 5) {
-    const validValues = values
-        .filter(v => Number.isFinite(v))
-        .sort((a, b) => a - b);
-    
-    if (validValues.length < 2) return [];
-    
-    const classes = [];
-    for (let i = 0; i < n; i++) {
-        const startIdx = Math.floor(i * validValues.length / n);
-        const endIdx = Math.floor((i + 1) * validValues.length / n) - 1;
-        
-        classes.push({
-            min: validValues[startIdx],
-            max: validValues[endIdx]
-        });
-    }
-    
-    return classes;
-}*/
 function computePercentileClasses(values, percentiles = [0, 20, 40, 60, 80, 100]) {
     // 1. Valeurs valides triées
     let validValues = values
@@ -352,13 +332,4 @@ function resetMap() {
     indicateurActif = false;
     updateMap();
     map.setView([49.2, 0.5], 8);
-}
-
-function exportCarte() {
-    html2canvas(document.getElementById('map')).then(canvas => {
-        const lien = document.createElement('a');
-        lien.download = 'carte_normandie_' + Date.now() + '.png';
-        lien.href = canvas.toDataURL();
-        lien.click();
-    });
 }

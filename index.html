@@ -6,7 +6,7 @@
     <title>Carte Normandie</title>
 
     <!-- Inclusion de leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" crossorigin=""/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@drustack/leaflet.resetview/dist/L.Control.ResetView.min.css">
 
     <link rel="stylesheet" href="css/style.css" />
@@ -20,12 +20,11 @@
         <option value="">-- Choisissez un indicateur --</option>
     </select>
     
-    <input type="file" id="fileSelect" accept=".csv"/>
-
-    <button onclick="exportCarte()">📸 Exporter PNG</button>
+    <label id="fileSelectLabel" for="fileSelect">Importer un CSV</label>
+    <input type="file" id="fileSelect" accept=".csv">
 
     <script>
-        // Variables globales accessibles à tous les scripts
+        // Variables globales accessibles dans tous les scripts
         let dataByIndicator = {};
         let indicateurs = [];
     </script>
