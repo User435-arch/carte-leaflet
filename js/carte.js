@@ -1,5 +1,7 @@
 let indicateurActif = false;
 let classesGlobales = [];
+
+//Palette de couleurs pour la légende
 const palette = [
     "#eff3ff",
     "#bdd7e7",
@@ -120,7 +122,7 @@ legend.update = function (classes) {
 `;
 
     
-    // Valuers min et max correspondant à l'indicateur
+    // Valuers min et max correspondant aux valeurs de l'indicateur
     const minVal = Math.min(...classes.map(c => c.min));
     const maxVal = Math.max(...classes.map(c => c.max));
     this._div.innerHTML += `
@@ -228,7 +230,6 @@ function updateMap() {
         return;
     }
 
-    //classesGlobales = computeQuantileClasses(valeurs, 5);
     classesGlobales = computePercentileClasses(valeurs);
 
     legend.update(classesGlobales);
@@ -257,7 +258,7 @@ function computePercentileClasses(values, percentiles = [0, 20, 40, 60, 80, 100]
     
     if (validValues.length === 0) return [];
     
-    // 2. Suppression des doublons consécutifs
+    // Suppression des classes en double
     validValues = validValues.filter((v, i) => i === 0 || v !== validValues[i-1]);
     
     if (validValues.length < 2) {
@@ -277,7 +278,7 @@ function computePercentileClasses(values, percentiles = [0, 20, 40, 60, 80, 100]
         let minClass = validValues[idx1];
         let maxClass = validValues[Math.min(idx2, validValues.length - 1)];
         
-        // 3. SAUT des doublons dans la classe
+        // Ignore les doublons
         if (minClass === maxClass) {
             // Cherche prochaine valeur différente AVANT
             let j = idx2 + 1;
@@ -294,13 +295,13 @@ function computePercentileClasses(values, percentiles = [0, 20, 40, 60, 80, 100]
             }
         }
         
-        // 4. Classe valide UNIQUEMENT si min < max
+        // Classe valide uniquement si min < max
         if (minClass < maxClass) {
             classes.push({ min: minClass, max: maxClass });
         }
     }
     
-    // 5. Dernière classe = max réel
+    // La dernière classe contient la valeur max
     if (classes.length > 0) {
         classes[classes.length - 1].max = validValues[validValues.length - 1];
     }
@@ -313,13 +314,6 @@ function computePercentileClasses(values, percentiles = [0, 20, 40, 60, 80, 100]
             classesUniques.push(c);
         }
     });
-    
-    console.table(classesUniques.map((c,i) => ({
-        classe: i+1,
-        min: c.min,
-        max: c.max,
-        etendue: c.max - c.min
-    })));
     
     return classesUniques;
 }

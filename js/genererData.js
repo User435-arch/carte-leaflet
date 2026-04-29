@@ -14,8 +14,10 @@ reader.onload = (event) => {
     const { headers, rows } = parseCSV(csvText);
     const { indicateurs, dataByIndicator } = buildIndicators(headers, rows);
 
-    updateSelect(indicateurs);
 
+    document.getElementById("csvStatus").innerHTML   = `CSV chargé : <b>${document.getElementById('fileSelect').files[0].name}<b/>`;
+    document.getElementById("csvStatus").style.color = "#28a745";
+    updateSelect(indicateurs);
 
 };
 
@@ -35,17 +37,11 @@ function parseCSV(text) {
 }
 
 function buildIndicators(headers, rows) {
-    indicateurs = headers.slice(2); // code, libelle → le reste = indicateurs
+    indicateurs = headers.slice(2);
     dataByIndicator = {};
 
     indicateurs.forEach(ind => {
         dataByIndicator[ind] = {};
-        /*rows.forEach(r => {
-            if(r[ind].includes("N/A"))
-                dataByIndicator[ind][r.code] = "Aucune donnée";
-            else
-                dataByIndicator[ind][r.code] = r[ind];
-        });*/
 
         rows.forEach(r => {
             const raw = (r[ind] || "").toString().trim().toLowerCase();
@@ -71,10 +67,10 @@ function formatLibelleUniversel(csvLibelle) {
     
     let libelle = csvLibelle.trim();
     
-    // 1. Nettoyage : underscores → espaces multiples
+    // Remplacement des underscores par des espaces
     libelle = libelle.replace(/_+/g, ' ').trim();
     
-    // 2. Détection et remplacement des abréviations
+    // Détection et remplacement des abréviations
     const abrevs = {
         // Démographie
         'pop': 'Population',
@@ -108,7 +104,6 @@ function formatLibelleUniversel(csvLibelle) {
         'mois': 'Mois'
     };
     
-    // Remplacement des abréviations
     Object.keys(abrevs).forEach(abrev => {
         const regex = new RegExp(`\\b${abrev}\\b`, 'gi');
         libelle = libelle.replace(regex, abrevs[abrev]);
@@ -118,23 +113,23 @@ function formatLibelleUniversel(csvLibelle) {
         .toLowerCase()
         .split(/\s+/)
         .map(word => {
-            // Première lettre majuscule (sauf articles/prépositions)
-            const petitesMots = ['de', 'du', 'du', 'des', 'le', 'la', 'les', 'et', 'ou', 'en', 'sur'];
-            if (petitesMots.includes(word.toLowerCase())) return word.toLowerCase();
+            // Première lettre en majuscule (sauf articles/prépositions)
+            const petitsMots = ['de', 'du', 'du', 'des', 'le', 'la', 'les', 'et', 'ou', 'en', 'sur'];
+            if (petitsMots.includes(word.toLowerCase())) return word.toLowerCase();
             return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
         })
         .join(' ');
     
-    // 4. Post-traitement
     libelle = libelle
         .replace(/Km2/g, 'km²')
-        .replace(/([0-9]{4})\s+([0-9]{4})/g, '$1-$2')  // 2016 2022 → 2016-2022
-        .replace(/\s+/g, ' ')  // Espaces multiples
+        .replace(/([0-9]{4})\s+([0-9]{4})/g, '$1-$2')
+        .replace(/\s+/g, ' ')
         .trim();
     
     return libelle || "Indicateur";
 }
 
+//Initialisation du menu déroulant une fois le CSV importé
 function updateSelect(indicateurs) {
     const select = document.getElementById("indicateur");
     select.innerHTML = "<option value=''>-- Choisissez un indicateur --</option>";
