@@ -27,15 +27,7 @@ L.control.resetView({
         zoom: 8,
     }).addTo(map);
 
-L.easyPrint({
-    title: 'Exporter la carte',
-    position: 'topleft',
-    sizeModes: ['A4Portrait', 'A4Landscape'],
-    exportOnly: true,
-    filename: 'carte_normandie'
-}).addTo(map);
-
-
+//Définit les frontières des communes de la Normandie
 var geojsonLayer = null;
 fetch("json/normandie.json")
   .then(r => r.json())
@@ -76,6 +68,8 @@ document.getElementById("indicateur").addEventListener("change", function() {
         return;
     }
     
+    console.log(ind);
+    console.log(dataByIndicator[ind]);
     dataIndicateurCourant = dataByIndicator[ind];
     updateMap();
 });

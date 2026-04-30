@@ -9,11 +9,12 @@ document.getElementById("fileSelect").addEventListener("input", (event) => {
 
 reader.onload = (event) => {
 
-    const csvText = event.target.result;
+    const csvText = event.target.result;    
 
     const { headers, rows } = parseCSV(csvText);
-    const { indicateurs, dataByIndicator } = buildIndicators(headers, rows);
 
+    
+    const { indicateurs, dataByIndicator } = buildIndicators(headers, rows);
 
     document.getElementById("csvStatus").innerHTML   = `CSV chargé : <b>${document.getElementById('fileSelect').files[0].name}<b/>`;
     document.getElementById("csvStatus").style.color = "#28a745";
@@ -21,42 +22,113 @@ reader.onload = (event) => {
 
 };
 
+function cleanInseeCsv(rawText) {
+    const lines = rawText.split(/\r?\n/);
+
+    // Trouver la ligne qui commence par "code" (insensible à la casse)
+    const headerIndex = lines.findIndex(line =>
+        line.trim().toLowerCase().startsWith("code")
+    );
+
+    if (headerIndex === -1) {
+        throw new Error("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
+    }
+
+    // On supprime TOUT ce qui est avant l'en-tête
+    const cleanedLines = lines.slice(headerIndex);
+
+    return cleanedLines.join("\n");
+}
 
 function parseCSV(text) {
-    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
-    const headers = lines[0].split(";").map(h => h.trim());
+    // 1. Nettoyage global
+    text = text.replace(/\uFEFF/g, "");
 
-    const rows = lines.slice(1).map(line => {
-        const cols = line.split(";").map(c => c.trim());
-        const obj = {};
-        headers.forEach((h, i) => obj[h] = cols[i]);
-        return obj;
+    // 2. Découper en lignes
+    const rawLines = text
+        .split(/\r?\n/)
+        .map(l => l.replace(/\uFEFF/g, "").trim())
+        .filter(l => l.length > 0);
+
+    if (rawLines.length === 0) {
+        throw new Error("CSV vide");
+    }
+
+    // 3. Trouver la vraie ligne d'en-têtes :
+    //    - commence par "code" (insensible à la casse)
+    //    - contient au moins un point-virgule
+    // ✅ APRÈS (trouve "Code", "code", "CODE"...)
+    const headerIndex = rawLines.findIndex(line => {
+        const lower = line.toLowerCase().trim();
+        return lower.startsWith("code") && line.split(";").length >= 6; // Au moins 6 colonnes
     });
+
+
+    if (headerIndex === -1) {
+        throw new Error("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
+    }
+
+    // 4. Garder uniquement les lignes utiles
+    const lines = rawLines.slice(headerIndex);
+
+    // 5. Lire les en-têtes
+    const headers = lines[0]
+        .split(";")
+        .map(h => h.trim());
+
+    // 6. Lire les données
+    const rows = lines.slice(1).map(line => {
+    const cols = line.split(";").map(c => c.trim());
+
+    // Ignorer les lignes qui n'ont pas le bon nombre de colonnes
+    if (cols.length !== headers.length) {
+        console.warn("Ligne ignorée (colonnes incorrectes) :", line);
+        return null;
+    }
+
+    const obj = {};
+    headers.forEach((h, i) => {
+        obj[h] = cols[i] ?? "";
+    });
+    return obj;
+}).filter(r => r !== null);
+
 
     return { headers, rows };
 }
 
 function buildIndicators(headers, rows) {
-    indicateurs = headers.slice(2);
+    const normalizeKey = (str) => 
+        str.toLowerCase().trim().replace(/_+/g, '_');
+
+    const normalizedHeaders = headers.map(normalizeKey);
+    
+    // 🔥 FIX 1 : Mapping index → nom normalisé
+    const headerIndexMap = {};
+    normalizedHeaders.forEach((normKey, index) => {
+        headerIndexMap[normKey] = index;  // "sur_occupation_2022" → index 6
+    });
+
+    indicateurs = normalizedHeaders.slice(2); // Skip code + libellé
     dataByIndicator = {};
 
     indicateurs.forEach(ind => {
         dataByIndicator[ind] = {};
-
+        
+        // 🔥 FIX 2 : Utiliser l'INDEX correspondant
+        const colIndex = headerIndexMap[ind];
+        
         rows.forEach(r => {
-            const raw = (r[ind] || "").toString().trim().toLowerCase();
-
-            if (
-                raw.includes("n/a") ||
-                raw.includes("division par") ||
-                raw.includes("résultat non disponible")
-            ) {
-                dataByIndicator[ind][r.code] = "Aucune donnée";
-            } else {
-                dataByIndicator[ind][r.code] = r[ind];
-            }
+            const code = r.Code || r.code || Object.keys(r)[0];
+            const rawValue = r[headers[colIndex]] || "";  // ✅ Par INDEX brut
+            
+            const raw = rawValue.toString().trim().toLowerCase();
+            dataByIndicator[ind][code] = raw.includes("n/a") || 
+                                       raw.includes("division") || 
+                                       raw.includes("non disponible")
+                ? "Aucune donnée" 
+                : rawValue;
         });
-
     });
 
     return { indicateurs, dataByIndicator };
@@ -137,7 +209,7 @@ function updateSelect(indicateurs) {
     indicateurs.forEach(ind => {
         const option = document.createElement("option");
         option.value = ind;
-        option.textContent = formatLibelleUniversel(ind);
+        option.textContent = formatLibelleUniversel(ind.replace(/_/g, ' '));
         select.appendChild(option);
     });
 }
