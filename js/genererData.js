@@ -106,21 +106,20 @@ function buildIndicators(headers, rows) {
     // 🔥 FIX 1 : Mapping index → nom normalisé
     const headerIndexMap = {};
     normalizedHeaders.forEach((normKey, index) => {
-        headerIndexMap[normKey] = index;  // "sur_occupation_2022" → index 6
+        headerIndexMap[normKey] = index;
     });
 
-    indicateurs = normalizedHeaders.slice(2); // Skip code + libellé
+    indicateurs = normalizedHeaders.slice(2);
     dataByIndicator = {};
 
     indicateurs.forEach(ind => {
         dataByIndicator[ind] = {};
         
-        // 🔥 FIX 2 : Utiliser l'INDEX correspondant
         const colIndex = headerIndexMap[ind];
         
         rows.forEach(r => {
             const code = r.Code || r.code || Object.keys(r)[0];
-            const rawValue = r[headers[colIndex]] || "";  // ✅ Par INDEX brut
+            const rawValue = r[headers[colIndex]] || "";
             
             const raw = rawValue.toString().trim().toLowerCase();
             dataByIndicator[ind][code] = raw.includes("n/a") || 
