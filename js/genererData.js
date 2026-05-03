@@ -31,7 +31,7 @@ function cleanInseeCsv(rawText) {
     );
 
     if (headerIndex === -1) {
-        throw new Error("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
+        alert("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
     }
 
     // On supprime TOUT ce qui est avant l'en-tête
@@ -51,7 +51,7 @@ function parseCSV(text) {
         .filter(l => l.length > 0);
 
     if (rawLines.length === 0) {
-        throw new Error("CSV vide");
+        alert("CSV vide");
     }
 
     // 3. Trouver la vraie ligne d'en-têtes :
@@ -65,7 +65,7 @@ function parseCSV(text) {
 
 
     if (headerIndex === -1) {
-        throw new Error("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
+        alert("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
     }
 
     // 4. Garder uniquement les lignes utiles
