@@ -1,3 +1,4 @@
+let fichierValide;
 const reader = new FileReader();
 
 document.getElementById("fileSelect").addEventListener("input", (event) => {
@@ -8,17 +9,20 @@ document.getElementById("fileSelect").addEventListener("input", (event) => {
 });
 
 reader.onload = (event) => {
+    fichierValide = true;
 
     const csvText = event.target.result;    
 
     const { headers, rows } = parseCSV(csvText);
 
-    
-    const { indicateurs, dataByIndicator } = buildIndicators(headers, rows);
+    if(fichierValide)
+    {
+        const { indicateurs, dataByIndicator } = buildIndicators(headers, rows);
 
-    document.getElementById("csvStatus").innerHTML   = `CSV chargé : <b>${document.getElementById('fileSelect').files[0].name}<b/>`;
-    document.getElementById("csvStatus").style.color = "#28a745";
-    updateSelect(indicateurs);
+        document.getElementById("csvStatus").innerHTML   = `CSV chargé : <b>${document.getElementById('fileSelect').files[0].name}<b/>`;
+        document.getElementById("csvStatus").style.color = "#28a745";
+        updateSelect(indicateurs);
+    }
 
 };
 
@@ -31,6 +35,7 @@ function cleanInseeCsv(rawText) {
     );
 
     if (headerIndex === -1) {
+        fichierValide = false;
         alert("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
     }
 
@@ -51,6 +56,7 @@ function parseCSV(text) {
         .filter(l => l.length > 0);
 
     if (rawLines.length === 0) {
+        fichierValide = false;
         alert("CSV vide");
     }
 
@@ -65,6 +71,7 @@ function parseCSV(text) {
 
 
     if (headerIndex === -1) {
+        fichierValide = false;
         alert("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
     }
 
