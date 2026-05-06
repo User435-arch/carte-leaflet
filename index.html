@@ -15,12 +15,36 @@
 <body>
 
     <h2>Carte de la Normandie</h2>
+    <h3>La carte de la Normandie s'affiche par défaut, vous pouvez aussi afficher une carte d'une autre région ou de la France entière</h3>
 
     <select id="indicateur">
         <option value="">-- Choisissez un indicateur --</option>
     </select>
-    
-    <label id="fileSelectLabel" for="fileSelect">Importer un CSV</label>
+
+    <div>
+        <select id="selectRegion">
+            <option value="28">Normandie</option>
+            <option value="11">Île-de-France</option>
+            <option value="24">Centre-Val de Loire</option>
+            <option value="27">Bourgogne-Franche-Comté</option>
+            <option value="32">Hauts-de-France</option>
+            <option value="44">Grand Est</option>
+            <option value="52">Pays de la Loire</option>
+            <option value="53">Bretagne</option>
+            <option value="75">Nouvelle-Aquitaine</option>
+            <option value="76">Occitanie</option>
+            <option value="84">Auvergne-Rhône-Alpes</option>
+            <option value="93">Provence-Alpes-Côte d’Azur</option>
+            <option value="94">Corse</option>
+            <option value="01">Guadeloupe</option>
+            <option value="02">Martinique</option>
+            <option value="03">Guyane</option>
+            <option value="04">La Réunion</option>
+            <option value="06">Mayotte</option>
+        </select>
+    </div>
+
+    <label id="fileSelectLabel" for="fileSelect">Importer un fichier de données (CSV)</label>
     <input type="file" id="fileSelect" accept=".csv">
 
     <span id="csvStatus" style="margin-left:10px; font-size:14px; color:#555;">
@@ -40,6 +64,8 @@
     <script src="js/genererData.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@drustack/leaflet.resetview/dist/L.Control.ResetView.min.js"></script>
+    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
+    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
     <script src="js/carte.js"></script>
 
 </body>

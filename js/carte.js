@@ -10,6 +10,13 @@ const palette = [
     "#08519c"
 ];
 
+const regions = {
+    normandie: { center: [49.2, 0.5], zoom: 9, bounds: [[48.5, -2.0], [49.8, 1.5]] },
+    'ile-de-france': { center: [48.85, 2.35], zoom: 9, bounds: [[48.0, 1.5], [49.1, 3.2]] },
+    bretagne: { center: [48.2, -3.0], zoom: 8, bounds: [[47.5, -5.0], [48.8, -1.5]] },
+    occitanie: { center: [43.8, 1.5], zoom: 7, bounds: [[41.5, -0.5], [46.0, 4.0]] }
+};
+
 
 // Initialisation de la carte
 var map = L.map('map').setView([49.2, 0.5], 8); // Centre de la Normandie
@@ -33,9 +40,19 @@ fetch("json/normandie.json")
   .then(r => r.json())
   .then(geojson => {
     geojsonLayer = L.geoJSON(geojson, {
-      onEachFeature: onEachFeature
+      style: style,  // ✅ LIÉ au style dynamique
+      onEachFeature: onEachFeature,
     }).addTo(map);
-});
+  });
+
+let jsonFrance = null;
+
+fetch("json/france-complete.json")
+    .then(r => r.json())
+    .then(data => {
+        jsonFrance = data;
+    });
+
 
 //Infobox pour l'affichage des données
 var info = L.control();
@@ -57,21 +74,68 @@ var info = L.control();
 
 let dataIndicateurCourant = {};
 
+//Bouton plein écran
+map.addControl(new L.Control.Fullscreen());
+
+document.getElementById("selectRegion").addEventListener("change", e => {
+    const code = e.target.value;
+
+    console.log(code);
+   
+    const region = filterRegion(jsonFrance, code);
+    loadGeojson(region);
+});
+
+function filterRegion(jsonFrance, regCode) {
+    console.log(jsonFrance);
+    return {
+        type: "FeatureCollection",
+        features: jsonFrance.features.filter(f => {
+            return f.properties.region === regCode;
+        })
+    };
+}
+
+
+function loadGeojson(json) {
+    console.log(" Chargement région:", json.features?.length || 0, "communes");
+    
+    // SUPPRIME l'ancienne couche
+    if (geojsonLayer) {
+        map.removeLayer(geojsonLayer);
+    }
+    
+    // CRÉE nouvelle couche avec BON style/onEachFeature
+    geojsonLayer = L.geoJSON(json, {
+        style: style,
+        onEachFeature: onEachFeature
+    }).addTo(map);
+    
+    // Auto-zoom sur la région
+    if (json.features && json.features.length > 0) {
+        map.fitBounds(geojsonLayer.getBounds().pad(0.05)); // Petit padding
+    }
+    
+    // Reset indicateur (évite bug coloration)
+    resetMap();
+    
+    console.log(" Région chargée:", geojsonLayer.getLayers().length, "couches");
+}
 
 document.getElementById("indicateur").addEventListener("change", function() {
     const ind = this.value;
     
     if (ind === "" || !dataByIndicator[ind]) {
-        // Reset des données
         dataIndicateurCourant = {};
-        updateMap();
+        indicateurActif = false;
+        if (geojsonLayer) geojsonLayer.setStyle(defaultStyle);
+        legend.update([]);
         return;
     }
     
-    console.log(ind);
-    console.log(dataByIndicator[ind]);
     dataIndicateurCourant = dataByIndicator[ind];
-    updateMap();
+    indicateurActif = true;
+    updateMap();  // ✅ Utilise la nouvelle fonction
 });
 
 
@@ -131,37 +195,60 @@ legend.update = function (classes) {
 
 legend.addTo(map);
 
+
 function style(feature) {
     const code = feature.properties.code;
     const brut = dataIndicateurCourant[code];
-
-    if (brut === "Aucune donnée" || brut === "inconnu" || brut === null) {
-        return {
-            fillColor: "#ff0000",
-            color: "#555",
-            weight: 1,
-            fillOpacity: 0.6
-        };
+    
+    if (!brut || brut === "Aucune donnée" || !Number.isFinite(Number(brut))) {
+        return { fillColor: "#ff0000", color: "#555", weight: 1, fillOpacity: 0.6 };
     }
-
-    const val = Number(brut);
-
-    if (!Number.isFinite(val)) {
-        return {
-            fillColor: "#d9d9d9",
-            color: "#555",
-            weight: 1,
-            fillOpacity: 0.6
-        };
-    }
-
+    
     return {
-        fillColor: getColor(val, classesGlobales),
+        fillColor: getColor(Number(brut), classesGlobales),
         color: "#555",
         weight: 1,
         fillOpacity: 0.7
     };
 }
+
+/*function style(feature) {
+    // 🔥 TOUS les formats possibles
+    const rawCode = getCodeInsee(feature.properties);
+    const code = String(rawCode || "").trim().padStart(5, "0");
+
+    
+    if (!code) {
+        //console.warn("❌ Pas de code INSEE:", feature.properties);
+        return { fillColor: "#ff0000", fillOpacity: 0.6 };
+    }
+    
+    // 🔥 Nettoyage agressif
+    code = code.toString().trim()
+        .replace(/^(COM_|INSEE_)/i, '')           // COM_75056 → 75056
+        .replace(/[\.\-_\s]/g, '')                // 75.056 → 75056
+        .replace(/^(\d{2})(\d{3})$/, '$1$2')      // 75 056 → 75056
+        .padStart(5, '0');                        // 5601 → 05601
+    
+    const brut = dataIndicateurCourant[code];
+    
+    console.log(`🔍 ${feature.properties.nom}: ${code} → ${brut}`); // Debug 1 seule fois
+    
+    if (!indicateurActif) {
+        return { fillColor: "#3388ff", color: "white", weight: 1, fillOpacity: 0.7 };
+    }
+    
+    if (!brut || brut === "Aucune donnée") {
+        return { fillColor: "#ff0000", color: "#555", weight: 1, fillOpacity: 0.6 };
+    }
+    
+    return {
+        fillColor: getColor(Number(brut), classesGlobales),
+        color: "#555",
+        weight: 1,
+        fillOpacity: 0.7
+    };
+}*/
 
 
 function onEachFeature(feature, layer) {
@@ -199,35 +286,25 @@ function onEachFeature(feature, layer) {
 }
 
 function updateMap() {
-    if (!dataIndicateurCourant || Object.keys(dataIndicateurCourant).length === 0) {
-        // Pas d'indicateur actif
-        indicateurActif = false;
-        geojsonLayer.setStyle({
-            weight: 1,
-            color: "#555",
-            fillOpacity: 0.7,
-            fillColor: "#3388ff"
-        });
-        legend.update([]); // Cache la légende
-        return;
-    }
+    if (!geojsonLayer) return;
     
-    // Indicateur actif
-    indicateurActif = true;
-    
-    const valeurs = Object.values(dataIndicateurCourant)
-        .map(v => Number(v))
-        .filter(v => Number.isFinite(v));
-
-    if (valeurs.length === 0) {
+    if (!indicateurActif || Object.keys(dataIndicateurCourant).length === 0) {
+        geojsonLayer.setStyle(defaultStyle);
         legend.update([]);
         return;
     }
-
+    
+    // Calcule classes
+    const valeurs = Object.values(dataIndicateurCourant)
+        .map(v => Number(v))
+        .filter(v => Number.isFinite(v));
+    
     classesGlobales = computePercentileClasses(valeurs);
-
     legend.update(classesGlobales);
+    
+    // ✅ RECRÉE le style (force mise à jour)
     geojsonLayer.setStyle(style);
+    geojsonLayer.bringToFront();
 }
 
 function getColor(value, classes) {
@@ -318,6 +395,7 @@ function resetMap() {
     document.getElementById("indicateur").value = "";
     dataIndicateurCourant = {};
     indicateurActif = false;
-    updateMap();
+    //if (geojsonLayer) geojsonLayer.setStyle(defaultStyle);
+    legend.update([]);
     map.setView([49.2, 0.5], 8);
 }
