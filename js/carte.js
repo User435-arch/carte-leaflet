@@ -34,7 +34,7 @@ L.control.resetView({
         zoom: 8,
     }).addTo(map);
 
-//Définit les frontières des communes de la Normandie
+//Définit les frontières des communes de la Normandie par défaut
 var geojsonLayer = null;
 fetch("json/normandie.json")
   .then(r => r.json())
@@ -212,44 +212,6 @@ function style(feature) {
     };
 }
 
-/*function style(feature) {
-    // 🔥 TOUS les formats possibles
-    const rawCode = getCodeInsee(feature.properties);
-    const code = String(rawCode || "").trim().padStart(5, "0");
-
-    
-    if (!code) {
-        //console.warn("❌ Pas de code INSEE:", feature.properties);
-        return { fillColor: "#ff0000", fillOpacity: 0.6 };
-    }
-    
-    // 🔥 Nettoyage agressif
-    code = code.toString().trim()
-        .replace(/^(COM_|INSEE_)/i, '')           // COM_75056 → 75056
-        .replace(/[\.\-_\s]/g, '')                // 75.056 → 75056
-        .replace(/^(\d{2})(\d{3})$/, '$1$2')      // 75 056 → 75056
-        .padStart(5, '0');                        // 5601 → 05601
-    
-    const brut = dataIndicateurCourant[code];
-    
-    console.log(`🔍 ${feature.properties.nom}: ${code} → ${brut}`); // Debug 1 seule fois
-    
-    if (!indicateurActif) {
-        return { fillColor: "#3388ff", color: "white", weight: 1, fillOpacity: 0.7 };
-    }
-    
-    if (!brut || brut === "Aucune donnée") {
-        return { fillColor: "#ff0000", color: "#555", weight: 1, fillOpacity: 0.6 };
-    }
-    
-    return {
-        fillColor: getColor(Number(brut), classesGlobales),
-        color: "#555",
-        weight: 1,
-        fillOpacity: 0.7
-    };
-}*/
-
 
 function onEachFeature(feature, layer) {
 
@@ -395,7 +357,7 @@ function resetMap() {
     document.getElementById("indicateur").value = "";
     dataIndicateurCourant = {};
     indicateurActif = false;
-    //if (geojsonLayer) geojsonLayer.setStyle(defaultStyle);
+    if (geojsonLayer) geojsonLayer.setStyle(defaultStyle);
     legend.update([]);
     map.setView([49.2, 0.5], 8);
 }

@@ -1,6 +1,11 @@
 let fichierValide;
 const reader = new FileReader();
 
+//Lecture du CSV par défaut
+document.addEventListener("DOMContentLoaded", (event) => {
+    loadCSVAuto();
+});
+
 document.getElementById("fileSelect").addEventListener("input", (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -25,6 +30,30 @@ reader.onload = (event) => {
     }
 
 };
+
+async function loadCSVAuto() {
+    try {
+        document.getElementById("csvStatus").innerHTML = "Chargement CSV auto...";
+        
+        const response = await fetch('csv/data_generales.csv');
+        const csvText = await response.text();
+        
+        const { headers, rows } = parseCSV(csvText);
+        const { indicateurs } = buildIndicators(headers, rows);
+        
+        document.getElementById("csvStatus").innerHTML = 
+            'CSV auto: data_generales.csv';
+        document.getElementById("csvStatus").style.color = "#28a745";
+        
+        updateSelect(indicateurs);
+        
+    } catch (err) {
+        console.warn("CSV auto échoué:", err);
+        document.getElementById("csvStatus").innerHTML = 
+            'CSV auto introuvable';
+        document.getElementById("csvStatus").style.color = "#ffc107";
+    }
+}
 
 function cleanInseeCsv(rawText) {
     const lines = rawText.split(/\r?\n/);
