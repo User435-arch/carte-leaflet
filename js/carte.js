@@ -11,10 +11,97 @@ const palette = [
 ];
 
 const regions = {
-    normandie: { center: [49.2, 0.5], zoom: 9, bounds: [[48.5, -2.0], [49.8, 1.5]] },
-    'ile-de-france': { center: [48.85, 2.35], zoom: 9, bounds: [[48.0, 1.5], [49.1, 3.2]] },
-    bretagne: { center: [48.2, -3.0], zoom: 8, bounds: [[47.5, -5.0], [48.8, -1.5]] },
-    occitanie: { center: [43.8, 1.5], zoom: 7, bounds: [[41.5, -0.5], [46.0, 4.0]] }
+    "01": { // Guadeloupe
+        center: [16.25, -61.55],
+        zoom: 10,
+        bounds: [[15.8, -61.8], [16.6, -61.2]]
+    },
+    "02": { // Martinique
+        center: [14.65, -61.0],
+        zoom: 10,
+        bounds: [[14.3, -61.3], [14.9, -60.7]]
+    },
+    "03": { // Guyane
+        center: [4.5, -53.2],
+        zoom: 6,
+        bounds: [[2.1, -54.6], [6.0, -51.6]]
+    },
+    "04": { // La Réunion
+        center: [-21.12, 55.53],
+        zoom: 10,
+        bounds: [[-21.4, 55.2], [-20.9, 55.8]]
+    },
+    "06": { // Mayotte
+        center: [-12.82, 45.15],
+        zoom: 11,
+        bounds: [[-13.1, 44.9], [-12.6, 45.4]]
+    },
+
+    "11": { // Île-de-France
+        center: [48.85, 2.35],
+        zoom: 9,
+        bounds: [[48.0, 1.5], [49.2, 3.4]]
+    },
+    "24": { // Centre-Val de Loire
+        center: [47.8, 1.5],
+        zoom: 8,
+        bounds: [[46.5, -0.2], [48.6, 3.0]]
+    },
+    "27": { // Bourgogne-Franche-Comté
+        center: [47.2, 5.3],
+        zoom: 8,
+        bounds: [[46.2, 3.0], [48.3, 7.6]]
+    },
+    "28": { // Normandie
+        center: [49.2, 0.5],
+        zoom: 8,
+        bounds: [[48.2, -2.1], [50.0, 1.8]]
+    },
+    "32": { // Hauts-de-France
+        center: [50.3, 2.8],
+        zoom: 8,
+        bounds: [[49.8, 1.4], [51.1, 4.3]]
+    },
+    "44": { // Grand Est
+        center: [48.7, 6.2],
+        zoom: 7,
+        bounds: [[47.4, 4.2], [49.6, 8.4]]
+    },
+    "52": { // Pays de la Loire
+        center: [47.4, -0.7],
+        zoom: 8,
+        bounds: [[46.5, -2.5], [48.6, 0.7]]
+    },
+    "53": { // Bretagne
+        center: [48.2, -3.0],
+        zoom: 8,
+        bounds: [[47.3, -5.2], [48.9, -1.0]]
+    },
+    "75": { // Nouvelle-Aquitaine
+        center: [45.5, 0.2],
+        zoom: 7,
+        bounds: [[43.5, -2.0], [47.4, 2.0]]
+    },
+    "76": { // Occitanie
+        center: [43.8, 1.5],
+        zoom: 7,
+        bounds: [[41.3, -1.5], [45.3, 4.0]]
+    },
+    "84": { // Auvergne-Rhône-Alpes
+        center: [45.5, 4.0],
+        zoom: 7,
+        bounds: [[44.0, 2.0], [46.8, 7.5]]
+    },
+    "93": { // Provence-Alpes-Côte d’Azur
+        center: [43.8, 6.2],
+        zoom: 8,
+        bounds: [[42.9, 4.0], [44.4, 7.7]]
+    },
+    "94": { // Corse
+        center: [42.15, 9.0],
+        zoom: 9,
+        bounds: [[41.3, 8.5], [43.0, 9.6]]
+    }
 };
 
 
@@ -79,15 +166,12 @@ map.addControl(new L.Control.Fullscreen());
 
 document.getElementById("selectRegion").addEventListener("change", e => {
     const code = e.target.value;
-
-    console.log(code);
    
     const region = filterRegion(jsonFrance, code);
-    loadGeojson(region);
+    loadGeojson(region, code);
 });
 
 function filterRegion(jsonFrance, regCode) {
-    console.log(jsonFrance);
     return {
         type: "FeatureCollection",
         features: jsonFrance.features.filter(f => {
@@ -97,7 +181,7 @@ function filterRegion(jsonFrance, regCode) {
 }
 
 
-function loadGeojson(json) {
+function loadGeojson(json, code) {
     console.log(" Chargement région:", json.features?.length || 0, "communes");
     
     // SUPPRIME l'ancienne couche
@@ -113,11 +197,13 @@ function loadGeojson(json) {
     
     // Auto-zoom sur la région
     if (json.features && json.features.length > 0) {
-        map.fitBounds(geojsonLayer.getBounds().pad(0.05)); // Petit padding
+        //map.fitBounds(geojsonLayer.getBounds().pad(0.05)); // Petit padding
+        map.flyTo(regions[code].center, regions[code].zoom);
     }
     
     // Reset indicateur (évite bug coloration)
     resetMap();
+    updateMap();
     
     console.log(" Région chargée:", geojsonLayer.getLayers().length, "couches");
 }
@@ -128,14 +214,14 @@ document.getElementById("indicateur").addEventListener("change", function() {
     if (ind === "" || !dataByIndicator[ind]) {
         dataIndicateurCourant = {};
         indicateurActif = false;
-        if (geojsonLayer) geojsonLayer.setStyle(defaultStyle);
         legend.update([]);
+        geojsonLayer.setStyle(styleParDefaut);
         return;
     }
     
     dataIndicateurCourant = dataByIndicator[ind];
     indicateurActif = true;
-    updateMap();  // ✅ Utilise la nouvelle fonction
+    updateMap();
 });
 
 
@@ -195,9 +281,13 @@ legend.update = function (classes) {
 
 legend.addTo(map);
 
+function styleParDefaut()
+{
+    return { fillColor: "#ff0000", color: "#555", weight: 1, fillOpacity: 0.6 };
+}
 
 function style(feature) {
-    const code = feature.properties.code;
+    const code = normalizeCode(feature.properties.code);
     const brut = dataIndicateurCourant[code];
     
     if (!brut || brut === "Aucune donnée" || !Number.isFinite(Number(brut))) {
@@ -212,6 +302,20 @@ function style(feature) {
     };
 }
 
+function normalizeCode(code) {
+    // Paris
+    if (code.startsWith("75") && code !== "75056") return "75056";
+
+    // Marseille
+    if (code.startsWith("13") && code !== "13055") return "13055";
+
+    // Lyon (si ton JSON découpe aussi)
+    if (code.startsWith("69") && code !== "69123") return "69123";
+
+    return code;
+}
+
+
 
 function onEachFeature(feature, layer) {
 
@@ -223,7 +327,7 @@ function onEachFeature(feature, layer) {
             const code = props.code || props.INSEE || props.CODE;
 
             // Récupérer la valeur de l’indicateur courant
-            const valeur = dataIndicateurCourant[code];
+            const valeur = dataIndicateurCourant[normalizeCode(code)];
 
             // Mise à jour de l'infobox
             info.update({ nom, valeur });
@@ -251,7 +355,6 @@ function updateMap() {
     if (!geojsonLayer) return;
     
     if (!indicateurActif || Object.keys(dataIndicateurCourant).length === 0) {
-        geojsonLayer.setStyle(defaultStyle);
         legend.update([]);
         return;
     }
@@ -270,6 +373,7 @@ function updateMap() {
 }
 
 function getColor(value, classes) {
+    console.log("valeur : ", value);
     if (value === "Aucune donnée" || value === null || value === undefined || !Number.isFinite(value)) {
         return "#ff0000";
     }
@@ -354,10 +458,7 @@ function computePercentileClasses(values, percentiles = [0, 20, 40, 60, 80, 100]
 
 // Pour le chargement initial
 function resetMap() {
-    document.getElementById("indicateur").value = "";
-    dataIndicateurCourant = {};
-    indicateurActif = false;
-    if (geojsonLayer) geojsonLayer.setStyle(defaultStyle);
+    //document.getElementById("indicateur").value = "";
+    //indicateurActif = false;
     legend.update([]);
-    map.setView([49.2, 0.5], 8);
 }
