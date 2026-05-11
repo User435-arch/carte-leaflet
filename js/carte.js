@@ -157,7 +157,10 @@ var info = L.control();
         : "Survolez une commune";
   };
 
-  info.addTo(map);
+info.addTo(map);
+
+//Barre de recherche
+new L.Control.Geocoder().addTo(map);
 
 let dataIndicateurCourant = {};
 
@@ -182,7 +185,6 @@ function filterRegion(jsonFrance, regCode) {
 
 
 function loadGeojson(json, code) {
-    console.log(" Chargement région:", json.features?.length || 0, "communes");
     
     // SUPPRIME l'ancienne couche
     if (geojsonLayer) {
@@ -205,7 +207,6 @@ function loadGeojson(json, code) {
     resetMap();
     updateMap();
     
-    console.log(" Région chargée:", geojsonLayer.getLayers().length, "couches");
 }
 
 document.getElementById("indicateur").addEventListener("change", function() {
