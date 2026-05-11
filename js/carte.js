@@ -373,7 +373,6 @@ function updateMap() {
 }
 
 function getColor(value, classes) {
-    console.log("valeur : ", value);
     if (value === "Aucune donnée" || value === null || value === undefined || !Number.isFinite(value)) {
         return "#ff0000";
     }

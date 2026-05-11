@@ -154,7 +154,10 @@ function buildIndicators(headers, rows) {
         const colIndex = headerIndexMap[ind];
         
         rows.forEach(r => {
-            const code = r.Code || r.code || Object.keys(r)[0];
+            const rawCode = r.Code || r.code || Object.keys(r)[0];
+
+            const code = rawCode.trim().padStart(5, "0");
+
             const rawValue = r[headers[colIndex]] || "";
             
             const raw = rawValue.toString().trim().toLowerCase();
