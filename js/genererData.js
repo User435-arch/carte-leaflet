@@ -1,6 +1,93 @@
 let fichierValide;
 const reader = new FileReader();
 
+//Permet l'affichage des unités
+const unites = {
+    "flux_domicile_etude": "nombre",
+    "sur_occupation": "%",
+    "evol_pop_pct": "%", 
+    "population": "hab.",
+    "taux_natalite": "‰",
+    "taux_mortalite": "‰",
+    "evol_pop": "%",
+    "evol_pop_solde_naturel": "%",
+    "evol_pop_solde_migratoire": "%",
+    "population_hist": "hab.",
+    "densite_hist": "hab./km²",
+    "nb_75plus": "hab.",
+    "naissances": "nombre",
+    "deces": "nombre",
+    "part_celibataires": "%",
+    "nb_menages": "ménages",
+    "part_veuves": "%",
+    "part_pacses": "%",
+    "part_maries": "%",
+    "part_divorces": "%",
+    "part_concubinage": "%",
+    "menages_fiscaux": "ménages",
+    "mediane_niveau_vie": "€",
+    "electeurs": "nombre",
+    "nb_non_scolarises": "nombre",
+    "part_peu_diplomes": "%",
+    "part_bepc": "%",
+    "part_cap_bep": "%",
+    "part_bac": "%",
+    "part_bac2": "%",
+    "part_bac3_4": "%",
+    "logements": "logements",
+    "residences_principales": "logements",
+    "part_res_principales": "%",
+    "part_res_secondaires": "%",
+    "part_logements_vacants": "%",
+    "emplois_lt": "emplois",
+    "part_emplois_salaries": "%",
+    "taux_activite": "%",
+    "creations_entreprises": "nombre",
+    "etablissements": "nombre",
+    "part_etab_sans_salarie": "%",
+    "part_etab_1_9": "%",
+    "part_etab_10plus": "%",
+    "effectifs_salaries": "salariés",
+    "part_agriculture": "%",
+    "part_industrie": "%",
+    "part_construction": "%",
+    "part_commerces_services": "%",
+    "part_admin_sante_social": "%",
+    "part_hotels_haut": "%",
+    "part_hotels_milieu": "%",
+    "part_hotels_entree": "%",
+    "part_campings_haut": "%",
+    "part_campings_milieu": "%",
+    "part_campings_entree": "%",
+    "police_gendarmerie": "nombre",
+    "banques": "nombre",
+    "grandes_surfaces": "nombre",
+    "superettes": "nombre",
+    "boulangeries": "nombre",
+    "ecoles": "nombre",
+    "colleges": "nombre",
+    "lycees": "nombre",
+    "urgences": "nombre",
+    "medecins": "nombre",
+    "dentistes": "nombre",
+    "kines": "nombre",
+    "infirmiers": "nombre",
+    "pharmacies": "nombre",
+    "hebergement_personnes_agees": "places",
+    "eaje": "places",
+    "bassins_natation": "nombre",
+    "salles_multisports": "nombre",
+    "flux_domicile_travail": "nombre",
+    "flux_migration": "nombre",
+    "part_tc": "%",
+    "part_velo": "%",
+    "part_voiture": "%",
+    "part_non_diplomes": "%",
+    "taux_emploi_femmes": "%",
+    "taux_emploi_hommes": "%"
+};
+
+
 //Lecture du CSV par défaut
 document.addEventListener("DOMContentLoaded", (event) => {
     loadCSVAuto();
@@ -239,6 +326,17 @@ function formatLibelleUniversel(csvLibelle) {
     return libelle || "Indicateur";
 }
 
+function getUnite(ind)
+{
+    console.log(ind);
+
+    ind = ind.replace(/(_\d+)*_\d{4}[a-zA-Z_]*$/, "")
+              .replace(/_\d+$/, "");
+
+    console.log("remplacé: ", ind);
+    return unites[ind];
+}
+
 //Initialisation du menu déroulant une fois le CSV importé
 function updateSelect(indicateurs) {
     const select = document.getElementById("indicateur");
@@ -247,7 +345,7 @@ function updateSelect(indicateurs) {
     indicateurs.forEach(ind => {
         const option = document.createElement("option");
         option.value = ind;
-        option.textContent = formatLibelleUniversel(ind.replace(/_/g, ' '));
+        option.textContent = formatLibelleUniversel(ind.replace(/_/g, ' ')) + " (" + getUnite(ind) + ")";
         select.appendChild(option);
     });
 }
