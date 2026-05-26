@@ -259,7 +259,6 @@ document.getElementById("indicateur").addEventListener("change", function() {
     dataIndicateurCourant = dataByIndicator[ind];
     indicateurActif = true;
     updateDef(ind);
-    console.log(ind);
     updateMap();
 });
 
