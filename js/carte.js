@@ -115,11 +115,29 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 L.control.resetView({
-        position: "topleft",
-        title: "Reset view",
-        latlng: L.latLng([49.2, -0.5]),
-        zoom: 8,
-    }).addTo(map);
+    position: "topleft",
+    title: "Reset view",
+    latlng: L.latLng([49.2, -0.5]),
+    zoom: 8,
+
+    onAdd: function(map) {
+        const div = L.DomUtil.create("div", "leaflet-control-resetview");
+        div.innerHTML = "↺";
+
+        L.DomEvent.on(div, "click", () => {
+            map.setView([latInit, lonInit], zoomInit);
+
+            // Effacer le marqueur de recherche
+            if (window.searchMarker) {
+                map.removeLayer(window.searchMarker);
+                window.searchMarker = null;
+            }
+        });
+
+        return div;
+    }
+    
+}).addTo(map);
 
 //Définit les frontières des communes de la Normandie par défaut
 var geojsonLayer = null;
@@ -160,7 +178,25 @@ var info = L.control();
 info.addTo(map);
 
 //Barre de recherche
-new L.Control.Geocoder().addTo(map);
+//new L.Control.Geocoder().addTo(map);
+
+const geocoder = L.Control.geocoder({
+    defaultMarkGeocode: false
+})
+.on('markgeocode', function(e) {
+    const latlng = e.geocode.center;
+
+    // On crée notre propre marqueur
+    if (window.searchMarker) {
+        map.removeLayer(window.searchMarker);
+    }
+
+    window.searchMarker = L.marker(latlng).addTo(map);
+
+    map.setView(latlng, 12);
+})
+.addTo(map);
+
 
 let dataIndicateurCourant = {};
 
@@ -204,7 +240,7 @@ function loadGeojson(json, code) {
     }
     
     // Reset indicateur (évite bug coloration)
-    resetMap();
+    //resetMap();
     updateMap();
     
 }
@@ -222,6 +258,8 @@ document.getElementById("indicateur").addEventListener("change", function() {
     
     dataIndicateurCourant = dataByIndicator[ind];
     indicateurActif = true;
+    updateDef(ind);
+    console.log(ind);
     updateMap();
 });
 
@@ -310,7 +348,7 @@ function normalizeCode(code) {
     // Marseille
     if (code.startsWith("13") && code !== "13055") return "13055";
 
-    // Lyon (si ton JSON découpe aussi)
+    // Lyon
     if (code.startsWith("69") && code !== "69123") return "69123";
 
     return code;
@@ -368,9 +406,22 @@ function updateMap() {
     classesGlobales = computePercentileClasses(valeurs);
     legend.update(classesGlobales);
     
-    // ✅ RECRÉE le style (force mise à jour)
+    // RECRÉE le style (force mise à jour)
     geojsonLayer.setStyle(style);
     geojsonLayer.bringToFront();
+}
+
+function updateDef(indicateur)
+{
+    indicateur = indicateur.replace(/(_\d+)*_\d{4}[a-zA-Z_]*$/, "")
+              .replace(/_\d+$/, "");
+
+    fetch("json/definitions.json")
+    .then(r => r.json())
+    .then(defs => {
+        document.getElementById("defIndicateur").textContent = defs[indicateur];        
+    });
+
 }
 
 function getColor(value, classes) {
@@ -443,7 +494,7 @@ function computePercentileClasses(values, percentiles = [0, 20, 40, 60, 80, 100]
         classes[classes.length - 1].max = validValues[validValues.length - 1];
     }
     
-    // 6. SUPPRESSION DES DOUBLONS FINAUX
+    // Suppression des doublons finaux
     const classesUniques = [];
     classes.forEach(c => {
         const last = classesUniques[classesUniques.length - 1];

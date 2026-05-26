@@ -328,12 +328,10 @@ function formatLibelleUniversel(csvLibelle) {
 
 function getUnite(ind)
 {
-    console.log(ind);
 
     ind = ind.replace(/(_\d+)*_\d{4}[a-zA-Z_]*$/, "")
               .replace(/_\d+$/, "");
 
-    console.log("remplacé: ", ind);
     return unites[ind];
 }
 
