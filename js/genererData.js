@@ -145,7 +145,7 @@ async function loadCSVAuto() {
 function cleanInseeCsv(rawText) {
     const lines = rawText.split(/\r?\n/);
 
-    // Trouver la ligne qui commence par "code" (insensible à la casse)
+    // Trouver la ligne qui commence par "code" 
     const headerIndex = lines.findIndex(line =>
         line.trim().toLowerCase().startsWith("code")
     );
@@ -155,7 +155,7 @@ function cleanInseeCsv(rawText) {
         alert("CSV invalide : aucune ligne d'en-têtes commençant par 'code'.");
     }
 
-    // On supprime TOUT ce qui est avant l'en-tête
+    // On supprime tout ce qui est avant l'en-tête
     const cleanedLines = lines.slice(headerIndex);
 
     return cleanedLines.join("\n");
@@ -177,9 +177,7 @@ function parseCSV(text) {
     }
 
     // 3. Trouver la vraie ligne d'en-têtes :
-    //    - commence par "code" (insensible à la casse)
-    //    - contient au moins un point-virgule
-    // ✅ APRÈS (trouve "Code", "code", "CODE"...)
+    //    commence par "code" et contient au moins un point-virgule
     const headerIndex = rawLines.findIndex(line => {
         const lower = line.toLowerCase().trim();
         return lower.startsWith("code") && line.split(";").length >= 6; // Au moins 6 colonnes
